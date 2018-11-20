@@ -11,7 +11,7 @@ for k=1:NumberFiles
     fullFileName = fullfile(myFolder,files{k});
     temp= strsplit(fullFileName,'_')
     t=temp{19}
-    NewFileName=fullfile(myFolder,sprintf('%s.tif',t))
+    NewFileName=fullfile(myFolder,sprintf('frame%d.tif',k))
     imwrite(imread(fullFileName),NewFileName)
 end
 

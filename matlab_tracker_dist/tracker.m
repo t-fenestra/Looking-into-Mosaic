@@ -70,7 +70,7 @@ machines = {};
 %----------------------------------------------------
 % parameters for detect_particles, link_trajectories
 %----------------------------------------------------
-w = 3;         % radius of neighborhood: > particle radius, 
+w = 5;         % radius of neighborhood: > particle radius, 
                % < interparticle distance
 cutoff = 0.5;  % probability cutoff for non-particle
                % discrimination
@@ -117,6 +117,7 @@ disp('Scanning files for minimum and maximum intensity values...')
 maxint = -Inf;
 minint = Inf;
 numsat = 0;
+
 for img=init:final
     img
     file = sprintf('%s%d%s',filestub,img,ext);
