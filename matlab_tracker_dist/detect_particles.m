@@ -68,14 +68,16 @@ K = (exp(-(imjm2/(4*lambdan^2)))/B-(1/(dm^2)))/K0;
 filtered = conv2(orig,K,'same');
 
 if viz == 1,
-    figure(nfig)
+    %figure(nfig)
     nfig = nfig + 1;
-    imshow(orig)
-    title('original image')
-    figure(21);
+    %imshow(orig)
+    %title('original image')
+    %figure(21);
     mfig = nfig + 1;
-    imshow(filtered)
-    title('after convolution filter')
+    %imshow(filtered)
+    figure('Name','After convolution');imshowpair(orig,filtered,'montage');
+   
+    
 end;
 
 %====================================================================== 
@@ -125,7 +127,9 @@ m2 = zeros(npart,1);
 % for each particle: compute zero and second order moments
 % and position corrections epsx, epsy
 for ipart=1:npart,
+    progress=ipart/npart
     epsx = 1; epsy = 1;
+    counter=1;
     while or(abs(epsx)>0.5,abs(epsy)>0.5),
 	% lower and upper index bounds for all particle neighborhoods
 	% in local coordinates. Recalculate after every change in R,C
@@ -133,6 +137,7 @@ for ipart=1:npart,
 	lj = 1-(C-w-saturate(C-w,1,siz(2)));
 	ui = dm-(R+w-saturate(R+w,1,siz(1)));
 	uj = dm-(C+w-saturate(C+w,1,siz(2)));
+    
 	% masked image part containing the particle
 	Aij = filtered(R(ipart)+li(ipart)-w-1:R(ipart)+ui(ipart)-w-1,...
 	    C(ipart)+lj(ipart)-w-1:C(ipart)+uj(ipart)-w-1).* ...
@@ -153,10 +158,22 @@ for ipart=1:npart,
 	if abs(epsy)>0.5,
 	    C(ipart) = C(ipart)+sign(epsy);
 	end;
+    
+    counter=counter+1
+    
+    %force quit, to avoit never ending cycle
+    if counter>10
+        epsx=0;
+        epsy=0;
+    end;
+    
+    
     end; 
     % correct positions (eq. [5])
     R(ipart) = R(ipart)+epsx;
     C(ipart) = C(ipart)+epsy;
+    
+    
 end;	
 
 %====================================================================== 

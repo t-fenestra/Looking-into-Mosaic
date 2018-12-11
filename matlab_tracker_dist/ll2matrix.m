@@ -9,8 +9,12 @@
 %
 %         peaks{t}(:,1)    x (col)-positions at time t
 %         peaks{t}(:,2)    y (row)-positions at time t
+%         peaks{t}(:,3)    zero order intensity moments
+%         peaks{t}(:,4)    second order intensity moments
 %         peaks{t}(:,6)    linked list index to the same
 %                          particle at time t+1
+%         trajLen          minimum trajectory length to be further
+%                          processed
 %
 % The function returns a cell list of matrices where matrices{i}
 % is the i-th trajectory in the form of an N times 2 matrix
@@ -24,7 +28,7 @@
 %
 %====================================================================== 
 
-function matrices = ll2matrix(peaks)
+function matrices_selected = ll2matrix(peaks,trajLen)
 
 % convert linked list trajectories into a list of (x,y) matrices
 matrices = [];
@@ -35,11 +39,11 @@ for ii=1:length(peaks)         % loop over all frames
 	next = peaks{iframe}(ipart,6);
 	if (next > 0),         % if particle starts a trajectory,
 	                       % follow it
-	    matrix = [peaks{iframe}(ipart,1), peaks{iframe}(ipart,2)];
+	    matrix = [iframe,peaks{iframe}(ipart,1), peaks{iframe}(ipart,2),peaks{iframe}(ipart,3),peaks{iframe}(ipart,4)];
 	    peaks{iframe}(ipart,6) = -1;   % mark used
 	    while (next > 0),  % convert to matrix form
 		iframe = iframe + 1;
-		matrix = [matrix; peaks{iframe}(next,1), peaks{iframe}(next,2)];
+		matrix = [matrix; iframe, peaks{iframe}(next,1), peaks{iframe}(next,2),peaks{iframe}(next,3),peaks{iframe}(next,4)];
 		nextold = next;
 		next = peaks{iframe}(next,6);    % mark used
 		peaks{iframe}(nextold,6) = -1;
@@ -48,6 +52,17 @@ for ii=1:length(peaks)         % loop over all frames
 	    matrices = [matrices, matrix];
 	end;
     end;
+
+    
+matrices_selected=[] 
+for jj=1:length(matrices)
+    % delete trajectories with the length less than trajLen
+    if size(matrices{jj},1)>trajLen
+        matrices_selected=[matrices_selected,{matrices{jj}}]
+    end
+end;    
+    
+    
 end;
 
 return

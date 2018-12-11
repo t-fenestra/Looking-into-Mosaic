@@ -85,16 +85,16 @@ for iframe = 2:nframe,
 
     % initialize link matrix A
     for i=1:m,
-	% sort costs of real particles
-	[srtcst,srtidx] = sort(C(i,:));
-	% append index of dummy particle
-	iidx = 1;
-	dumidx = find(srtidx==(n+1));
-	% search for available particle of smallest cost or dummy
-	while and(sum(A(:,srtidx(iidx)))~=0, iidx<dumidx),
-	    iidx = iidx + 1;
-	end;
-	A(i,srtidx(iidx)) = 1;
+        % sort costs of real particles
+        [srtcst,srtidx] = sort(C(i,:));
+        % append index of dummy particle
+        iidx = 1;
+        dumidx = find(srtidx==(n+1));
+        % search for available particle of smallest cost or dummy
+        while and(sum(A(:,srtidx(iidx)))~=0, iidx<dumidx),
+            iidx = iidx + 1;
+        end;
+        A(i,srtidx(iidx)) = 1;
     end;
     % set dummy particle for columns with no entry
     s = sum(A,1);

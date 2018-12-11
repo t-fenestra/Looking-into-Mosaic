@@ -1,5 +1,5 @@
 % LOADTRAJ
-%    loads trajectory data from tracker text output file
+%loads trajectory data from tracker text output file
 %
 % syntax:   data = loadTraj('filename',cutlength)
 %

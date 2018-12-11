@@ -74,7 +74,7 @@ w = 5;         % radius of neighborhood: > particle radius,
                % < interparticle distance
 cutoff = 0.5;  % probability cutoff for non-particle
                % discrimination
-pth = 1;       % upper intensity percentile for particles
+pth = 0.005;       % upper intensity percentile for particles
 L = 10;        % maximum displacement between frames
 
 %-------- No more user-adjustable settings below this line ---------
@@ -174,6 +174,7 @@ else
             imshow(images(:,:,img))
             title('Original micrograph');
         end;
+        viz=0;
         peak = detect_particles(images(:,:,img),w,cutoff,pth,[viz,nfig]);
         peaks = [peaks, peak];
     end;
@@ -199,7 +200,7 @@ save trackdata peaks;
 %=============================================================
 % visualize paths  
 %=============================================================
-
+viz=1
 file = sprintf('%s%d%s',filestub,init,ext);
 orig = double(imread(file));
 [orig] = normalize(orig);

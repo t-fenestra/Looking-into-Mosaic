@@ -1,7 +1,7 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 %% Image properties
 dx=0.107  % 1px in mkm
-dt=0.1    %s
+dt=1e-3   %s
 3  % time step s
 BeadRadius=0.5 %mkm
 

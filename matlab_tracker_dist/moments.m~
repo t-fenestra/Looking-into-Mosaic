@@ -159,7 +159,7 @@ for idx=1:length(take),
     xlabel('log(\Deltat)    log([s])');
     ylabel(sprintf('log(MSD)    log([\\mum]^%d)',moment));
     plot([mm; uu], [a(1)*mm+a(2); a(1)*uu+a(2)], 'b--')
-    title(sprintf('moment %d:D=%.2f, RMS=%f',moment,D(2),RMS_D(2)))
+    title(sprintf('moment %d:D=%f, RMS=%f',moment,D(2),RMS_D(2)))
     hold off;    
     
     subplot(1,3,3)
@@ -169,18 +169,22 @@ for idx=1:length(take),
     mm = min(moments);
     uu = max(moments);
     plot([mm; uu], [b(1)*mm+b(2); b(1)*uu+b(2)],'b--')
+    plot([0,maxmoment],[0,maxmoment],'r--')
     plot([0,maxmoment],[0,0.5*maxmoment],'r--')
     xlabel('p')
     ylabel('\gamma_p')
-    title(sprintf('MSS=%.2f',MSS(idx)))
+    title(sprintf('MSS=%f',MSS(idx)))
     hold off
-    
-    %set(gcf,'position',[x0,y0,width,height])
-    set(gcf,'position',[100,100,1500,500])
-    
     pause;
 end
 
+    
+    
+    
+        
+
+
+1
 return
 
 
