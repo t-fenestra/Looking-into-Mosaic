@@ -1,6 +1,8 @@
 %% Estimate diffusion coefficient for 500nm balls
 % Stokes Einstein equation
 
+BeadRadius=0.5 %mkm
+
 kb=1.38*1e-23 % m^2*kg/(s^2*K)
 Tcelceus=27    % C
 % recalculate in K

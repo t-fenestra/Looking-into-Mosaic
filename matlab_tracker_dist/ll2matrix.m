@@ -3,7 +3,7 @@
 % LL2MATRIX: Converts trajectories in the linked-list representation
 %            to matrix form
 %
-% SYNTAX:  matrices = msd(peaks)
+% SYNTAX:  take = ll2matrix(peaks)
 %
 % INPUTS:  peaks   trajectories in linked list form as:
 %
@@ -25,10 +25,12 @@
 % Institute of Computational Science, Swiss Federal
 % Institute of Technology (ETH) Zurich. 
 % E-mail: sbalzarini@inf.ethz.ch
-%
+
+
+% updated by Tatyana Pichugina 18 December 2018
 %====================================================================== 
 
-function matrices_selected = ll2matrix(peaks,trajLen)
+function take = ll2matrix(peaks,trajLen)
 
 % convert linked list trajectories into a list of (x,y) matrices
 matrices = [];
@@ -52,18 +54,30 @@ for ii=1:length(peaks)         % loop over all frames
 	    matrices = [matrices, matrix];
 	end;
     end;
-
-    
-matrices_selected=[] 
-for jj=1:length(matrices)
-    % delete trajectories with the length less than trajLen
-    if size(matrices{jj},1)>trajLen
-        matrices_selected=[matrices_selected,{matrices{jj}}]
-    end
-end;    
-    
-    
 end;
 
+% determine which trajectories to include in the analysis.
+% Only take those which have no outliers in the step length histogram (they
+% usually correspond to wrong tracking assignments) and move by more than 1
+% pixel per frame (others are considered stationary and excluded from
+% motion analysis).
+
+
+% choose trajectory more than 5 points in length
+take = [];
+for itraj=1:length(matrices),
+    traj = matrices{itraj};
+    tlen = size(traj,1);
+    slen = sqrt((traj(2:tlen,2)-traj(1:tlen-1,2)).^2+(traj(2:tlen,3)-traj(1:tlen-1,3)).^2);
+    % the tracker accuracy is about 0.2 pixel
+    %if and(mean(slen) >= 0.3, std(slen) < 1),
+    if tlen>trajLen
+	take = [take, {matrices{itraj}}];
+    end;
+%     figure(1)
+%     hist(slen,10);
+%     pause 
+end;
+%disp(sprintf('%d trajectories excluded from analysis. Remaining: %d',length(matrices)-length(take),length(take)));    
 return
 

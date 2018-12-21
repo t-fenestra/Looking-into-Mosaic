@@ -26,66 +26,35 @@
 %           
 %
 %
-% Ivo Sbalzarini, 30.7.2003
-% Institute of Computational Science, Swiss Federal
-% Institute of Technology (ETH) Zurich. 
-% E-mail: sbalzarini@inf.ethz.ch
+% based on matlab version of Mosaik by Ivo Sbalzarini, 30.7.2003
+% updated 21.12.2018
 %
 %====================================================================== 
 
 function TrajectoryData = moments(trajs,dx,dt)
-
-
-
 % vector of real values telling which
 % moments of the displacement are to be
 % computed
-moments=[1:10]
+moments=1:10;
 
 % delt vector of integer delta t (in frames) values for 
 % which the displacements are to be computed.
 
 % determine maximum length in fraemes among trajectories 
 MaxFrame = max(cellfun('size',trajs,1)); 
-MaxDelt=floor(MaxFrame/3)
-delt=[1:MaxDelt]
-
-% determine which trajectories to include in the analysis.
-% Only take those which have no outliers in the step length histogram (they
-% usually correspond to wrong tracking assignments) and move by more than 1
-% pixel per frame (others are considered stationary and excluded from
-% motion analysis).
+MaxDelt=floor(MaxFrame/3);
+delt=1:MaxDelt;
 
 
-% choose trajectory more than 5 points in length
-take = [];
-for itraj=1:length(trajs),
-    traj = trajs{itraj};
-    tlen = size(traj,1);
-    slen = sqrt((traj(2:tlen,2)-traj(1:tlen-1,2)).^2+(traj(2:tlen,3)-traj(1:tlen-1,3)).^2);
-    % the tracker accuracy is about 0.2 pixel
-    %if and(mean(slen) >= 0.3, std(slen) < 1),
-    if tlen>15
-	take = [take, itraj];
-    end;
-%     figure(1)
-%     hist(slen,10);
-%     pause 
-end;
-disp(sprintf('%d trajectories excluded from analysis. Remaining: %d',length(trajs)-length(take),length(take)));
 
-TrajectoryData=zeros(length(take),6);
+TrajectoryData=zeros(length(trajs),6);
 gamma = zeros(length(moments),1);
 MSS = zeros(length(moments),1);
 RMS_D=zeros(length(moments),1);
 
-plot_moments=1
 
-    
-
-for idx=1:length(take),
-    itraj = take(idx);
-    traj = trajs{itraj};
+for idx=1:length(trajs)
+    traj = trajs{idx};
     tlen = size(traj,1);
     
     % calculate moments for one trajectory
@@ -93,25 +62,25 @@ for idx=1:length(take),
     D = zeros(length(moments),1);
     RMS_D=zeros(length(moments),1);
 
-    for imoment=1:length(moments),
+    for imoment=1:length(moments)
         moment = moments(imoment);
         
-        for it=1:length(delt),
+        for it=1:length(delt)
             td = delt(it);
-            if (3*td <= tlen),
+            if (3*td <= tlen)
                 dv = (traj([1+td:1:tlen],2)-traj([1:1:tlen-td],2)).^2 + ...
                 (traj([1+td:1:tlen],3)-traj([1:1:tlen-td],3)).^2;
-                dv = dx.*dx.*dv   % convert to physical units
-                dv = dv.^(moment/2)
-                MSD(moment,it) = sum(dv)/length(dv)
-            end;
-        end;
+                dv = dx.*dx.*dv;   % convert to physical units
+                dv = dv.^(moment/2);
+                MSD(moment,it) = sum(dv)/length(dv);
+            end
+        end
         
         %----------------------------------------%
         % calculate gamma and diffusion coeff
-        dt_index=find(MSD(moment,:)>-0.5)
-        t=dt*delt(dt_index) % convert to physical units
-        m=MSD(moment,dt_index)
+        dt_index=find(MSD(moment,:)>-0.5);
+        t=dt*delt(dt_index); % convert to physical units
+        m=MSD(moment,dt_index);
         A = [log(t'), ones(size(t'))];
         a = pinv(A)*log(m');
         alpha = a(1);
@@ -122,7 +91,7 @@ for idx=1:length(take),
         RMS_D(imoment) = sum((log(m)-(a(1)*log(t)+a(2))).^2);
         RMS_D(imoment) = sqrt(RMS_D(imoment)/length(t));
 
-    end;
+    end
     
     %----------------------------------------%
     % calculate MSS
@@ -141,44 +110,44 @@ for idx=1:length(take),
     
     %------------------------------------------%
     % plot trajectory, Diffusion constant, MSS
-    figure(idx)
-    subplot(1,3,1)
-    line(traj(:,2),traj(:,3))
-    title(sprintf('trajectory %d:',idx))
-            
-    subplot(1,3,2)
-    dt_index=find(MSD(2,:)>-0.5)
-    t=dt*delt(dt_index) % convert to physical units
-    m=MSD(2,dt_index)
-    A = [log(t'), ones(size(t'))];
-    a = pinv(A)*log(m');
-    mm = min(log(t));
-    uu = max(log(t));
-    hold on;
-    plot(log(t),log(m),'*')
-    xlabel('log(\Deltat)    log([s])');
-    ylabel(sprintf('log(MSD)    log([\\mum]^%d)',moment));
-    plot([mm; uu], [a(1)*mm+a(2); a(1)*uu+a(2)], 'b--')
-    title(sprintf('moment %d:D=%.2f, RMS=%f',moment,D(2),RMS_D(2)))
-    hold off;    
-    
-    subplot(1,3,3)
-    hold on
-    plot(moments,gamma,'*')
-    maxmoment = moments(length(moments));
-    mm = min(moments);
-    uu = max(moments);
-    plot([mm; uu], [b(1)*mm+b(2); b(1)*uu+b(2)],'b--')
-    plot([0,maxmoment],[0,0.5*maxmoment],'r--')
-    xlabel('p')
-    ylabel('\gamma_p')
-    title(sprintf('MSS=%.2f',MSS(idx)))
-    hold off
-    
-    %set(gcf,'position',[x0,y0,width,height])
-    set(gcf,'position',[100,100,1500,500])
-    
-    pause;
+%     figure(idx)
+%     subplot(1,3,1)
+%     line(traj(:,2),traj(:,3))
+%     title(sprintf('trajectory %d:',idx))
+%             
+%     subplot(1,3,2)
+%     dt_index=find(MSD(2,:)>-0.5)
+%     t=dt*delt(dt_index) % convert to physical units
+%     m=MSD(2,dt_index)
+%     A = [log(t'), ones(size(t'))];
+%     a = pinv(A)*log(m');
+%     mm = min(log(t));
+%     uu = max(log(t));
+%     hold on;
+%     plot(log(t),log(m),'*')
+%     xlabel('log(\Deltat)    log([s])');
+%     ylabel(sprintf('log(MSD)    log([\\mum]^%d)',moment));
+%     plot([mm; uu], [a(1)*mm+a(2); a(1)*uu+a(2)], 'b--')
+%     title(sprintf('moment %d:D=%.2f, RMS=%f',moment,D(2),RMS_D(2)))
+%     hold off;    
+%     
+%     subplot(1,3,3)
+%     hold on
+%     plot(moments,gamma,'*')
+%     maxmoment = moments(length(moments));
+%     mm = min(moments);
+%     uu = max(moments);
+%     plot([mm; uu], [b(1)*mm+b(2); b(1)*uu+b(2)],'b--')
+%     plot([0,maxmoment],[0,0.5*maxmoment],'r--')
+%     xlabel('p')
+%     ylabel('\gamma_p')
+%     title(sprintf('MSS=%.2f',MSS(idx)))
+%     hold off
+%     
+%     %set(gcf,'position',[x0,y0,width,height])
+%     set(gcf,'position',[100,100,1500,500])
+%     
+%     pause;
 end
 
 return

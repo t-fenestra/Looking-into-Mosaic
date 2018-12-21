@@ -43,63 +43,11 @@
 % No user-adjustable parameters below this line
 %-------------------------------------------------------------------
 
-function checkTracker(instub,first,last,infmt,ext,framewise,rescale,resultfile,cutlength,numtraj)
+function checkTracker(images,trajectories)
+Nframes=size(images,3);
+numtraj=size(trajectories);
 
-% argument validity checks
-if or(nargin<10, nargin>10),
-    disp('ERROR: wrong number of input arguments. See "help checkTracker" !');
-    return;
-end;
-if length(instub)<2,
-    disp('ERROR: instub must be a non-empty string !');
-    return;
-end;
-if length(resultfile)<2,
-    disp('ERROR: resultfile must be a non-empty string !');
-    return;
-end;
-if or(first<0, length(first)>1),
-    disp('ERROR: first must be a non-negative integer !');
-    return;
-end;
-if cutlength < 1
-    disp('cutlength must be larger than 0. Reset to 1.');
-end;
-if numtraj < 1
-    disp('numtraj must be larger than 0. Reset to 1.');
-end;
-if or(last<0, length(last)>1),
-    disp('ERROR: last must be a non-negative integer !');
-    return;
-end;
-if last<first,
-    disp('ERROR: last must be larger than first !');
-    return;
-end;
-if or(and(length(round(infmt))>1, ~strcmp(infmt,'free')),round(infmt)<1),
-    if ~strcmp(infmt,'free'), infmt = round(infmt); end;
-    disp('ERROR: infmt must be a positive integer or "free"');
-    return;
-end;
-if and(framewise ~= 0, framewise ~= 1),
-    disp('ERROR: framewise must be either 0 or 1 !');
-    return;
-end;
-if and(rescale ~= 0, rescale ~= 1),
-    disp('ERROR: rescale must be either 0 or 1 !');
-    return;
-end;
-if sum(strcmp(ext,{'tif','jpg','bmp','png','hdf','pcx','xwd'})) ~= 1,
-    disp('ERROR: ext must be one of the following: tif,jpg,bmp,png,hdf,pcx,xwd');
-    return;
-end;
-
-if rescale,
-    % read files and determine global extrema
-    [imin,imax] = getGlobalExtrema(instub,first,last,infmt,ext);
-end;
-
-data = loadTraj(resultfile,cutlength);
+data = trajectories; %loadTraj(resultfile,cutlength);
 Ntraj = length(data);
 if Ntraj < 1,
     disp('No trajectories read.')
@@ -121,32 +69,15 @@ end;
 disp(sprintf('%d longest trajectories will be included in analysis',numtraj))
 
 disp(' ');
+framewise=1;
 
-% save trajectories in files
-for it=1:numtraj,
-    % get it-longest trajectory
-    t = sortidx(Ntraj-it+1);
-    % save trajectory to file
-    outfile = sprintf('SPT_onlyone_%3.3d.xy',it);
-    pdet = data{t};
-    save(outfile,'pdet','-ASCII')
-end
-disp(sprintf('Extracted %d trajectories to xy files',numtraj))
+for img=1:Nframes,
+    
+  figure(1)
+  imshow(images(:,:,img),[]);
 
-for img=round(first):round(last),
-    file = getFileName(img,infmt,instub,ext);
-    a = double(imread(file));
-    if rescale,
-	b = (a-imin)/(imax-imin);
-    else
-	b = a;
-    end;
-    figure(1)
-    clf
-    imshow(b);
-
-    % find and plot all particle detections and trajectories in this frame
-    for it=1:numtraj,
+  % find and plot all particle detections and trajectories in this frame
+  for it=1:numtraj,
 	% get it-longest trajectory
 	t = sortidx(Ntraj-it+1);
 	% current particle detections

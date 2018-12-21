@@ -37,13 +37,15 @@
 %     179: 298-310.
 %====================================================================== 
 
-function peak = detect_particles(orig,w,cutoff,pth,v)
+function peak = detect_particles_old(orig,w,cutoff,pth,v)
 
 viz = v(1);
 nfig = v(2);
 
- 
-% % some often used quantities
+% correlation length of camera noise (usu. set to unity)
+lambdan = 1;
+
+% some often used quantities
 idx = [-w:1:w];     % index vector
 dm = 2*w+1;         % diameter
 im = repmat(idx',1,dm);
@@ -52,12 +54,38 @@ imjm2 = im.^2+jm.^2;
 siz = size(orig);   % image size
 
 %====================================================================== 
-% STEP 1: Locating particles
+% STEP 1: Image restoration
+%====================================================================== 
+
+% build kernel K for background extraction and noise removal
+% (eq. [4])
+B = sum(exp(-(idx.^2/(4*lambdan^2))));
+B = B^2;
+K0 = 1/B*sum(exp(-(idx.^2/(2*lambdan^2))))^2-(B/(dm^2));
+K = (exp(-(imjm2/(4*lambdan^2)))/B-(1/(dm^2)))/K0;
+
+% apply convolution filter
+filtered = conv2(orig,K,'same');
+filtered(filtered<0)=0;
+
+if viz == 0,
+    figure(nfig)
+    nfig = nfig + 1;
+    imshow(orig)
+    title('original image')
+    figure(21);
+    mfig = nfig + 1;
+    imshow(filtered)
+    title('after convolution filter')
+end;
+
+%====================================================================== 
+% STEP 2: Locating particles
 %====================================================================== 
 
 % determining upper pth-th percentile of intensity values
 pth = 0.01*pth;
-[cnts,bins] = imhist(orig);
+[cnts,bins] = imhist(filtered);
 l = length(cnts);
 k = 1;
 while sum(cnts(l-k:l))/sum(cnts) < pth,
@@ -71,39 +99,35 @@ mask(find(imjm2 <= w*w)) = 1;
 
 % identify individual particles as local maxima in a
 % w-neighborhood that are larger than thresh
-dil = imdilate(orig,mask);
-[Rp,Cp] = find((dil-orig)==0);
+dil = imdilate(filtered,mask);
+[Rp,Cp] = find((dil-filtered)==0);
 particles = zeros(siz);
-V = find(orig(sub2ind(siz,Rp,Cp))>thresh);
+V = find(filtered(sub2ind(siz,Rp,Cp))>thresh);
 R = Rp(V);
 C = Cp(V);
 particles(sub2ind(siz,R,C)) = 1;
 npart = length(R);
 
-
 if viz == 1,
     figure(nfig)
     nfig = nfig + 1;
-    imshow(orig)
-    hold on;
-    plot(C,R,'r+');
+    imshow(particles)
     title('intensity maxima of particles');
 end;
 
 %====================================================================== 
-% STEP 2: Refining location estimates
+% STEP 3: Refining location estimates
 %====================================================================== 
+
 % zero and second order intensity moments of all particles
-%% 
 m0 = zeros(npart,1);
 m2 = zeros(npart,1);
 
 % for each particle: compute zero and second order moments
 % and position corrections epsx, epsy
 for ipart=1:npart,
-    %progress=ipart/npart
+    progress=ipart/npart
     epsx = 1; epsy = 1;
-    counter=1;
     while or(abs(epsx)>0.5,abs(epsy)>0.5),
 	% lower and upper index bounds for all particle neighborhoods
 	% in local coordinates. Recalculate after every change in R,C
@@ -111,9 +135,8 @@ for ipart=1:npart,
 	lj = 1-(C-w-saturate(C-w,1,siz(2)));
 	ui = dm-(R+w-saturate(R+w,1,siz(1)));
 	uj = dm-(C+w-saturate(C+w,1,siz(2)));
-    
 	% masked image part containing the particle
-	Aij = orig(R(ipart)+li(ipart)-w-1:R(ipart)+ui(ipart)-w-1,...
+	Aij = filtered(R(ipart)+li(ipart)-w-1:R(ipart)+ui(ipart)-w-1,...
 	    C(ipart)+lj(ipart)-w-1:C(ipart)+uj(ipart)-w-1).* ...
 	    mask(li(ipart):ui(ipart),lj(ipart):uj(ipart));
 	% moments
@@ -132,62 +155,29 @@ for ipart=1:npart,
 	if abs(epsy)>0.5,
 	    C(ipart) = C(ipart)+sign(epsy);
 	end;
-    
-    counter=counter+1;
-    
-    %force quit, to avoit never ending cycle
-    if counter>10
-        epsx=0;
-        epsy=0;
-    end;
-    
-    
     end; 
     % correct positions (eq. [5])
     R(ipart) = R(ipart)+epsx;
     C(ipart) = C(ipart)+epsy;
-    
-    
-end;
-%
-
-
-%-------------------------------------------%
-% check if particles have overlapped neighbourhood
-% if yes it indicates that peacks refinment may be not valid
-d2=w^2;
-for i=1:length(R)
-    for j=(i+1):length(R)
-        dist=(R(i)-R(j))^2+(C(i)-C(j))^2;
-        if dist<d2
-            disp(sprintf('Warning in peaks refinement: peaks i=%d j=%d overlapped',i,j))
-%             hold on;
-%             imshow(particles)
-%             plot(R(i),C(i),'ro');
-%             plot(R(j),C(j),'go');
-%             hold off;
-        end;
-    end;    
-            
-end
+end;	
 
 %====================================================================== 
-% STEP 3: Non-particle discrimination
+% STEP 4: Non-particle discrimination
 %====================================================================== 
+
 sigx = 0.1;
 sigy = 0.1;
 prob = zeros(size(m0));
 Nm = length(m0);
-
-
 for i=1:Nm,
-    prob(i)=sum(exp(-((m0(i)-m0).^2./(2*sigx*sigx))-((m2(i)-m2).^2./...
-        (2*sigy*sigy)))/(2*pi*sigx*sigy*Nm));
+    prob(i)=sum(exp(-((m0(i)-m0).^2./(2*sigx))-((m2(i)-m2).^2./...
+        (2*sigy)))/(2*pi*sigx*sigy*Nm));
 end;
     
 if viz == 1,
+    figure(20)
+    clf
     figure(nfig)
-    clf;
     nfig = nfig + 1;
     subplot(2,2,1)
     hold on
@@ -221,7 +211,7 @@ peak(:,4) = m2(tmp);      % second order moment
 % field 6: used by linker to store linked list indices
 
 %====================================================================== 
-% STEP 4: Visualization
+% STEP 5: Visualization
 %====================================================================== 
 
 if viz == 1,
@@ -243,8 +233,5 @@ end;
 
 peak = {peak};
 
-  
 return
-
-
 
